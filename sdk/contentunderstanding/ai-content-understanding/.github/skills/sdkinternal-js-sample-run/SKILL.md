@@ -85,7 +85,7 @@ npm install --no-save --no-package-lock /tmp/azure-ai-content-understanding-*.tg
 Use the provided scripts to run samples:
 
 ```bash
-cd sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-sample/scripts
+cd sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-sample-run/scripts
 
 # Run all samples
 ./run_samples.sh all
@@ -208,7 +208,7 @@ Here's the recommended workflow:
 
 ```bash
 # 1. Navigate to the scripts directory
-cd sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-sample/scripts
+cd sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-sample-run/scripts
 
 # 2. Run the setup script (handles install, build, pack, and tarball install)
 ./setup_samples.sh
@@ -245,6 +245,6 @@ cd ../javascript
 npm install --no-save --no-package-lock /tmp/azure-ai-content-understanding-*.tgz
 
 # 6. Run all samples
-cd ../../.github/skills/sdkinternal-js-sample/scripts
+cd ../../.github/skills/sdkinternal-js-sample-run/scripts
 ./run_samples.sh all
 ```

@@ -69,18 +69,18 @@ Verify each fix listed in the "Current Known Fixes" section below is still appli
 - **SERVICE-FIX**: Issues with the service returning incorrect/inconsistent data
 - **SDK-IMPROVEMENT**: Enhancements to the SDK API for better developer experience
 
-| Fix # | Category        | Description                                                                       | Check Location                                             | Verification                                                                                           |
-| ----- | --------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 1     | EMITTER-FIX     | `serializeRecord` return types + no param reassign                                | `src/static-helpers/serialization/serialize-record.ts`     | Has `): Record<string, any>` return type and uses `propertiesToExclude`                                |
-| 2     | SERVICE-FIX     | `keyFrameTimesMs` casing fallback                                                 | `src/models/models.ts` in `audioVisualContentDeserializer` | Has `item["keyFrameTimesMs"] ?? item["KeyFrameTimesMs"]`                                               |
-| 3     | SDK-IMPROVEMENT | `stringEncoding` always 'utf16' via ContentUnderstandingClient                    | `src/contentUnderstandingClient.ts`                        | `analyze` and `analyzeBinary` pass `stringEncoding: "utf16"` internally                                |
-| 4     | EMITTER-FIX     | `path` variable renamed to `urlPath`                                              | `src/api/operations.ts` in `_getResultFileSend`            | Uses `const urlPath = expandUrlTemplate(...)`                                                          |
-| 5     | EMITTER-FIX     | Null guard in `contentFieldDefinitionRecordDeserializer`                          | `src/models/models.ts`                                     | Has `if (!item) { return item; }`                                                                      |
-| 6     | SDK-IMPROVEMENT | `value` property on ContentField types                                            | `src/models/models.ts`                                     | All field types have `value` property                                                                  |
-| 7     | SDK-IMPROVEMENT | ContentUnderstandingClient API customizations                                     | `src/contentUnderstandingClient.ts`                        | Explicit `AnalyzeOptionalParams`/`AnalyzeBinaryOptionalParams` interfaces, `analyze` requires `inputs` |
-| 8     | EMITTER-FIX     | `result` variable renamed to `varResults` in urlTemplate                          | `src/static-helpers/urlTemplate.ts`                        | Uses `const varResults = []` instead of `const result = []`                                            |
-| 9     | EMITTER-FIX     | Regex character class fix in urlTemplate                                          | `src/static-helpers/urlTemplate.ts`                        | Uses `/[.~-]/` instead of `/[\-.~]/`                                                                   |
-| 10    | EMITTER-FIX     | Hide `getResult` and `getOperationStatus` methods (Access.internal not respected) | `src/contentUnderstandingClient.ts`                        | Methods commented out - marked @@access(Access.internal) in TypeSpec but emitter ignores it            |
+| Fix # | Category        | Description                                                                            | Check Location                                             | Verification                                                                                |
+| ----- | --------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1     | EMITTER-FIX     | `serializeRecord` return types + no param reassign                                     | `src/static-helpers/serialization/serialize-record.ts`     | Has `): Record<string, any>` return type and uses `propertiesToExclude`                     |
+| 2     | SERVICE-FIX     | `keyFrameTimesMs` casing fallback                                                      | `src/models/models.ts` in `audioVisualContentDeserializer` | Has `item["keyFrameTimesMs"] ?? item["KeyFrameTimesMs"]`                                    |
+| 3     | SDK-IMPROVEMENT | `stringEncoding` always 'utf16' via ContentUnderstandingClient                         | `src/contentUnderstandingClient.ts`                        | `analyze` and `analyzeBinary` pass `stringEncoding: "utf16"` internally                     |
+| 4     | EMITTER-FIX     | `path` variable renamed to `urlPath`                                                   | `src/api/operations.ts` in `_getResultFileSend`            | Uses `const urlPath = expandUrlTemplate(...)`                                               |
+| 5     | SERVICE-FIX     | Null guard in `contentFieldDefinitionRecordDeserializer` for missing required `fields` | `src/models/models.ts`                                     | Has `if (!item) { return item; }`                                                           |
+| 6     | SDK-IMPROVEMENT | `value` property on ContentField types                                                 | `src/models/models.ts`                                     | All field types have `value` property                                                       |
+| 7     | SDK-IMPROVEMENT | ContentUnderstandingClient API customizations                                          | `src/contentUnderstandingClient.ts`, `src/api/options.ts`  | Explicit `AnalyzeOptionalParams`/`AnalyzeBinaryOptionalParams` interfaces                   |
+| 8     | EMITTER-FIX     | `result` variable renamed to `varResults` in urlTemplate                               | `src/static-helpers/urlTemplate.ts`                        | Uses `const varResults = []` instead of `const result = []`                                 |
+| 9     | EMITTER-FIX     | Regex character class fix in urlTemplate                                               | `src/static-helpers/urlTemplate.ts`                        | Uses `/[.~-]/` instead of `/[\-.~]/`                                                        |
+| 10    | EMITTER-FIX     | Hide `getResult` and `getOperationStatus` methods (Access.internal not respected)      | `src/contentUnderstandingClient.ts`                        | Methods commented out - marked @@access(Access.internal) in TypeSpec but emitter ignores it |
 
 **If a fix is now included in the generated code upstream, remove it from this skill document.**
 
@@ -204,9 +204,8 @@ keyFrameTimesMs: (() => {
 ```typescript
 // In analyze method:
 const getInitialResponse = async (): Promise<PathUncheckedResponse> => {
-  const res = await _analyzeSend(this._client, analyzerId, {
+  const res = await _analyzeSend(this._client, analyzerId, inputs, {
     ...options,
-    inputs,
     stringEncoding: "utf16",
   });
   // ... operationId extraction
@@ -215,7 +214,7 @@ const getInitialResponse = async (): Promise<PathUncheckedResponse> => {
 
 // In analyzeBinary method:
 const getInitialResponse = async (): Promise<PathUncheckedResponse> => {
-  const res = await _analyzeBinarySend(this._client, analyzerId, contentType, binaryInput, {
+  const res = await _analyzeBinarySend(this._client, analyzerId, binaryInput, contentType, {
     ...options,
     stringEncoding: "utf16",
   });
@@ -267,13 +266,15 @@ export function _getResultFileSend(
 
 ---
 
-### Fix 5 [EMITTER-FIX]: Missing Null Guard in contentFieldDefinitionRecordDeserializer
+### Fix 5 [SERVICE-FIX]: Missing Null Guard in contentFieldDefinitionRecordDeserializer
 
 **File**: `src/models/models.ts` in `contentFieldDefinitionRecordDeserializer`
 
-**Problem**: The function calls `Object.keys(item)` without first checking if `item` is null or undefined, which would throw a runtime error.
+**Problem**: The service returns `"fieldSchema": {}` (empty object) for some prebuilt analyzers (e.g., `prebuilt-audio`), omitting the required `fields` property. This causes `contentFieldSchemaDeserializer` to call `contentFieldDefinitionRecordDeserializer(undefined)`, which throws a `TypeError` at `Object.keys(undefined)`.
 
-**Why this matters**: The `definitions` property in `ContentFieldSchema` is optional. When the service returns a response without `definitions`, the deserializer receives `undefined` and crashes.
+**Note**: The TypeSpec defines `fields: Record<ContentFieldDefinition>` as required on `FieldSchema` (not optional), so this is a service contract violation. The `definitions` property (optional) is already safely guarded at the call site with `!item["definitions"] ? item["definitions"] : contentFieldDefinitionRecordDeserializer(item["definitions"])`, so it does not need this fix.
+
+**Why this matters**: Without this guard, listing or getting analyzers like `prebuilt-audio` crashes at runtime.
 
 **Fix**: Add a null/undefined check at the beginning of the function:
 
@@ -337,7 +338,7 @@ export function stringFieldDeserializer(item: any): StringField {
 | `StringField` | `string` | `valueString` |
 | `NumberField` | `number` | `valueNumber` |
 | `IntegerField` | `number` | `valueInteger` |
-| `DateField` | `string` | `valueDate` |
+| `DateField` | `Date` | `valueDate` |
 | `TimeField` | `string` | `valueTime` |
 | `BooleanField` | `boolean` | `valueBoolean` |
 | `ArrayField` | `ContentFieldUnion[]` | `valueArray` |
@@ -348,18 +349,18 @@ export function stringFieldDeserializer(item: any): StringField {
 
 ### Fix 7 [SDK-IMPROVEMENT]: ContentUnderstandingClient API Customizations
 
-**File**: `src/contentUnderstandingClient.ts`
+**Files**: `src/contentUnderstandingClient.ts`, `src/api/options.ts`
 
 **Problem**: The generated client API for `analyze` and `analyzeBinary` needs to be customized for better developer experience:
 
-1. `inputs` should be a required parameter for `analyze`, not optional in the options bag
-2. `stringEncoding` should be hidden from users (always 'utf16')
+1. `stringEncoding` should be hidden from users (always 'utf16')
+2. `contentType` should have a default value of `"application/octet-stream"` (EMITTER-FIX: TypeSpec defines this default but the emitter doesn't generate it)
 3. The `operationId` should be exposed on the poller for result retrieval
 
 **Why this matters**:
 
-- `inputs` is semantically required - an analyze call without inputs doesn't make sense
 - `stringEncoding` must always be 'utf16' for JavaScript (see Fix 3)
+- `contentType` default is defined in TypeSpec but the emitter doesn't carry it through; adding it makes the common case (binary upload) simple while still allowing overrides
 - Users need `operationId` to call `getResult`, `getResultFile`, and `deleteResult`
 
 **Fix**: Add custom option types as explicit interfaces (not `Omit<>` aliases) to keep standard type names (`AnalyzeOptionalParams`, `AnalyzeBinaryOptionalParams`) and avoid API Extractor warnings about unexported symbols. Modify method signatures accordingly:
@@ -383,8 +384,6 @@ export interface AnalyzeBinaryOptionalParams extends OperationOptions {
   updateIntervalInMs?: number;
   /** Range of the input to analyze (ex. `1-3,5,9-`). Document content uses 1-based page numbers, while audio visual content uses integer milliseconds. */
   range?: string;
-  /** Request content type. */
-  contentType?: string;
   /** The location where the data may be processed. Defaults to global. */
   processingLocation?: ProcessingLocation;
 }
@@ -397,14 +396,7 @@ export interface AnalyzeResultPoller extends PollerLike<
   operationId?: string;
 }
 
-// analyze method - inputs is now a required second parameter
-analyze(
-  analyzerId: string,
-  inputs: AnalyzeInput[],
-  options: AnalyzeOptionalParams = { requestOptions: {} },
-): AnalyzeResultPoller
-
-// analyzeBinary method - uses custom options type
+// analyzeBinary method - contentType as positional param with default, custom options type
 analyzeBinary(
   analyzerId: string,
   binaryInput: Uint8Array,
@@ -413,6 +405,8 @@ analyzeBinary(
 ): AnalyzeResultPoller
 ```
 
+Note: `inputs` as a required parameter for `analyze` and `contentType` as a positional parameter for `analyzeBinary` are now the generated TypeSpec behavior and do not require customization.
+
 Both methods internally always pass `stringEncoding: "utf16"` and expose `operationId` on the returned poller.
 
 **Important**: The custom option types must be defined as explicit interfaces, not as `Omit<>` type aliases. This approach:
@@ -420,7 +414,7 @@ Both methods internally always pass `stringEncoding: "utf16"` and expose `operat
 1. Keeps standard type names (`AnalyzeOptionalParams`, `AnalyzeBinaryOptionalParams`) aligned with other option types
 2. Avoids API Extractor warnings like "The symbol 'AnalyzeOptionalParams_2' needs to be exported" that occur when using `Omit<GeneratedType, "prop">`
 
-**After regeneration**: Check if new properties were added to the generated `AnalyzeOptionalParams` or `AnalyzeBinaryOptionalParams` in `generated/api/options.ts`. If so, add them to the custom interfaces in `src/contentUnderstandingClient.ts` (excluding `inputs` and `stringEncoding` which are intentionally hidden).
+**After regeneration**: Check if new properties were added to the generated `AnalyzeOptionalParams` or `AnalyzeBinaryOptionalParams` in `generated/api/options.ts`. If so, add them to the custom interfaces in `src/contentUnderstandingClient.ts` (excluding `stringEncoding` which is intentionally hidden).
 
 ---
 

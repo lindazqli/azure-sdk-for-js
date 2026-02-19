@@ -91,20 +91,20 @@ if [ "$RUN_TESTS" = true ]; then
     npm install --no-save --no-package-lock "$TARBALL"
     
     # Run all samples using the existing skill script
-    SAMPLES_SCRIPT="$SCRIPT_DIR/../../sdkinternal-js-sample-run-all-samples/scripts/run_samples_js.sh"
+    SAMPLES_SCRIPT="$SCRIPT_DIR/../../sdkinternal-js-sample-run/scripts/run_samples.sh"
     if [ -f "$SAMPLES_SCRIPT" ]; then
         echo "Running all samples..."
         "$SAMPLES_SCRIPT" all
     else
         echo "Warning: Sample runner script not found at $SAMPLES_SCRIPT"
-        echo "Please run samples manually using the sdkinternal-js-sample-run-all-samples skill."
+        echo "Please run samples manually using the sdkinternal-js-sample-run skill."
     fi
 else
     echo "=== Next Steps ==="
     echo "To verify the generated samples work correctly, run:"
     echo "  $0 --test"
     echo ""
-    echo "Or follow the sdkinternal-js-sample-run-all-samples skill to test manually."
+    echo "Or follow the sdkinternal-js-sample-run skill to test manually."
 fi
 
 echo ""

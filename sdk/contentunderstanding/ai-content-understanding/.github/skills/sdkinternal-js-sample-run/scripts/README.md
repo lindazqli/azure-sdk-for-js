@@ -106,7 +106,7 @@ Here's the typical workflow for running samples:
 
 ```bash
 # 1. Navigate to the scripts directory
-cd sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-sample/scripts
+cd sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-sample-run/scripts
 
 # 2. Run the setup script (first time only)
 ./setup_samples.sh
@@ -202,7 +202,7 @@ When you make changes to the SDK source code:
 sdk/contentunderstanding/ai-content-understanding/
 ├── .github/
 │   └── skills/
-│       └── sdkinternal-js-sample/
+│       └── sdkinternal-js-sample-run/
 │           ├── SKILL.md
 │           └── scripts/
 │               ├── README.md (this file)

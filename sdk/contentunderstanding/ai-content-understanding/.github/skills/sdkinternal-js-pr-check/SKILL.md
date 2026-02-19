@@ -1,5 +1,5 @@
 ---
-name: sdkinternal-js-sdk-pr-check
+name: sdkinternal-js-pr-check
 description: "Checklist of commands to run before pushing a PR to ensure CI passes."
 ---
 
@@ -98,5 +98,5 @@ pnpm turbo build --filter=@azure/ai-content-understanding... --token 1 && pnpm f
 Run the automated script to perform all checks:
 
 ```bash
-./.github/skills/sdkinternal-js-sdk-pre-pr-check/pre-pr-check.sh
+./.github/skills/sdkinternal-js-sdk-pr-check/pre-pr-check.sh
 ```

@@ -59,12 +59,12 @@ This will:
 
 ### Step 4: Test the Generated Samples
 
-After regenerating, use the `sdkinternal-js-sample-run-all-samples` skill to verify the samples work correctly:
+After regenerating, use the `sdkinternal-js-sample-run` skill to verify the samples work correctly:
 
 1. Build the package and install it in sample directories
 2. Run all samples to check for errors
 
-Refer to the `sdkinternal-js-sample-run-all-samples` skill for detailed testing instructions.
+Refer to the `sdkinternal-js-sample-run` skill for detailed testing instructions.
 
 ## Complete Workflow
 
@@ -101,8 +101,8 @@ cd ../javascript
 npm install --no-save --no-package-lock /tmp/azure-ai-content-understanding-*.tgz
 
 # 8. Run all samples to verify
-cd ../../.github/skills/sdkinternal-js-sample-run-all-samples/scripts
-./run_samples_js.sh all
+cd ../../.github/skills/sdkinternal-js-sample-run/scripts
+./run_samples.sh all
 ```
 
 ## Troubleshooting
@@ -140,4 +140,4 @@ cd ../../.github/skills/sdkinternal-js-sample-run-all-samples/scripts
 
 - Always run `dev-tool` commands from the package directory, not the repo root
 - The `-f` flag forces regeneration even if samples already exist
-- After regenerating samples, always test them using the `sdkinternal-js-sample-run-all-samples` skill
+- After regenerating samples, always test them using the `sdkinternal-js-sample-run` skill

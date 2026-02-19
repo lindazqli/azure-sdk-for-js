@@ -124,7 +124,7 @@ This skill includes a script that handles pre-flight checks, git configuration v
 ### Script Location
 
 ```bash
-sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-test-push-recordings/scripts/push_recordings.sh
+sdk/contentunderstanding/ai-content-understanding/.github/skills/sdkinternal-js-test-push/scripts/push_recordings.sh
 ```
 
 ### Script Usage
@@ -225,8 +225,7 @@ View recordings at: `https://github.com/Azure/azure-sdk-assets/tree/<Tag>`
 
 ## Related Skills
 
-- `sdkinternal-js-test-record` - Record tests before pushing
-- `sdkinternal-js-test-playback` - Verify recordings work in playback mode
+- `sdkinternal-js-test-run` - Run tests in live, record, or playback mode
 
 ## Documentation
 
