@@ -57,6 +57,7 @@ Key files to check:
 - `src/static-helpers/urlTemplate.ts`
 - `src/models/models.ts`
 - `src/api/operations.ts`
+- `src/api/contentUnderstandingContext.ts`
 - `src/contentUnderstandingClient.ts`
 
 ### Step 5: Check Fix Status
@@ -69,18 +70,19 @@ Verify each fix listed in the "Current Known Fixes" section below is still appli
 - **SERVICE-FIX**: Issues with the service returning incorrect/inconsistent data
 - **SDK-IMPROVEMENT**: Enhancements to the SDK API for better developer experience
 
-| Fix # | Category        | Description                                                                            | Check Location                                             | Verification                                                                                |
-| ----- | --------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 1     | EMITTER-FIX     | `serializeRecord` return types + no param reassign                                     | `src/static-helpers/serialization/serialize-record.ts`     | Has `): Record<string, any>` return type and uses `propertiesToExclude`                     |
-| 2     | SERVICE-FIX     | `keyFrameTimesMs` casing fallback                                                      | `src/models/models.ts` in `audioVisualContentDeserializer` | Has `item["keyFrameTimesMs"] ?? item["KeyFrameTimesMs"]`                                    |
-| 3     | SDK-IMPROVEMENT | `stringEncoding` always 'utf16' via ContentUnderstandingClient                         | `src/contentUnderstandingClient.ts`                        | `analyze` and `analyzeBinary` pass `stringEncoding: "utf16"` internally                     |
-| 4     | EMITTER-FIX     | `path` variable renamed to `urlPath`                                                   | `src/api/operations.ts` in `_getResultFileSend`            | Uses `const urlPath = expandUrlTemplate(...)`                                               |
-| 5     | SERVICE-FIX     | Null guard in `contentFieldDefinitionRecordDeserializer` for missing required `fields` | `src/models/models.ts`                                     | Has `if (!item) { return item; }`                                                           |
-| 6     | SDK-IMPROVEMENT | `value` property on ContentField types                                                 | `src/models/models.ts`                                     | All field types have `value` property                                                       |
-| 7     | SDK-IMPROVEMENT | ContentUnderstandingClient API customizations                                          | `src/contentUnderstandingClient.ts`, `src/api/options.ts`  | Explicit `AnalyzeOptionalParams`/`AnalyzeBinaryOptionalParams` interfaces                   |
-| 8     | EMITTER-FIX     | `result` variable renamed to `varResults` in urlTemplate                               | `src/static-helpers/urlTemplate.ts`                        | Uses `const varResults = []` instead of `const result = []`                                 |
-| 9     | EMITTER-FIX     | Regex character class fix in urlTemplate                                               | `src/static-helpers/urlTemplate.ts`                        | Uses `/[.~-]/` instead of `/[\-.~]/`                                                        |
-| 10    | EMITTER-FIX     | Hide `getResult` and `getOperationStatus` methods (Access.internal not respected)      | `src/contentUnderstandingClient.ts`                        | Methods commented out - marked @@access(Access.internal) in TypeSpec but emitter ignores it |
+| Fix # | Category        | Description                                                                            | Check Location                                                                | Verification                                                                                |
+| ----- | --------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1     | EMITTER-FIX     | `serializeRecord` return types + no param reassign                                     | `src/static-helpers/serialization/serialize-record.ts`                        | Has `): Record<string, any>` return type and uses `propertiesToExclude`                     |
+| 2     | SERVICE-FIX     | `keyFrameTimesMs` casing fallback                                                      | `src/models/models.ts` in `audioVisualContentDeserializer`                    | Has `item["keyFrameTimesMs"] ?? item["KeyFrameTimesMs"]`                                    |
+| 3     | SDK-IMPROVEMENT | `stringEncoding` always 'utf16' via ContentUnderstandingClient                         | `src/contentUnderstandingClient.ts`                                           | `analyze` and `analyzeBinary` pass `stringEncoding: "utf16"` internally                     |
+| 4     | EMITTER-FIX     | `path` variable renamed to `urlPath`                                                   | `src/api/operations.ts` in `_getResultFileSend`                               | Uses `const urlPath = expandUrlTemplate(...)`                                               |
+| 5     | SERVICE-FIX     | Null guard in `contentFieldDefinitionRecordDeserializer` for missing required `fields` | `src/models/models.ts`                                                        | Has `if (!item) { return item; }`                                                           |
+| 6     | SDK-IMPROVEMENT | `value` property replaces `value*` on ContentField types                               | `src/models/models.ts`                                                        | All field types have only `value` (no `valueString`, `valueArray`, etc.)                    |
+| 7     | SDK-IMPROVEMENT | ContentUnderstandingClient API customizations                                          | `src/contentUnderstandingClient.ts`, `src/api/options.ts`                     | Explicit `AnalyzeOptionalParams`/`AnalyzeBinaryOptionalParams` interfaces                   |
+| 8     | EMITTER-FIX     | `result` variable renamed to `varResults` in urlTemplate                               | `src/static-helpers/urlTemplate.ts`                                           | Uses `const varResults = []` instead of `const result = []`                                 |
+| 9     | EMITTER-FIX     | Regex character class fix in urlTemplate                                               | `src/static-helpers/urlTemplate.ts`                                           | Uses `/[.~-]/` instead of `/[\-.~]/`                                                        |
+| 10    | EMITTER-FIX     | Hide `getResult` and `getOperationStatus` methods (Access.internal not respected)      | `src/contentUnderstandingClient.ts`                                           | Methods commented out - marked @@access(Access.internal) in TypeSpec but emitter ignores it |
+| 11    | EMITTER-FIX     | Rename `endpointParam` to `endpoint`                                                   | `src/contentUnderstandingClient.ts`, `src/api/contentUnderstandingContext.ts` | Constructor and factory function use `endpoint` instead of `endpointParam`                  |
 
 **If a fix is now included in the generated code upstream, remove it from this skill document.**
 
@@ -295,28 +297,29 @@ export function contentFieldDefinitionRecordDeserializer(
 
 ---
 
-### Fix 6 [SDK-IMPROVEMENT]: Add value Property to ContentField Types
+### Fix 6 [SDK-IMPROVEMENT]: Replace `value*` Properties with `value` on ContentField Types
 
 **File**: `src/models/models.ts`
 
-**Problem**: The generated ContentField subtypes (StringField, NumberField, etc.) only expose typed properties like `valueString`, `valueNumber`, etc. This differs from the .NET SDK which exposes a convenient `value` property.
+**Problem**: The generated ContentField subtypes (StringField, NumberField, etc.) expose typed properties like `valueString`, `valueNumber`, `valueArray`, `valueObject`, etc. This differs from the .NET SDK which exposes a single convenient `value` property. Having both `value*` and `value` is redundant and confusing.
 
 **Why this matters**:
 
-- Improves developer experience by providing a consistent, simpler way to access field values
+- Improves developer experience by providing a single, consistent way to access field values
 - Aligns with the .NET SDK design for cross-language consistency
 - Reduces boilerplate in user code (no need to check field type before accessing value)
 - Simplifies samples and documentation
+- Removes redundant `valueString`, `valueNumber`, `valueDate`, `valueTime`, `valueInteger`, `valueBoolean`, `valueArray`, `valueObject`, `valueJson` properties
 
-**Fix**: Add a `value` property to each ContentField subtype interface and populate it in the deserializer:
+**Fix**: Replace the generated `value*` properties with a single `value` property on each ContentField subtype interface. The deserializers map from the wire format (`valueString`, `valueNumber`, etc.) to the unified `value` property.
 
-**StringField**:
+**StringField** example:
 
 ```typescript
 export interface StringField extends ContentField {
   fieldType: "string";
-  valueString?: string;
-  value?: string; // Added
+  // CUSTOMIZATION: SDK-IMPROVEMENT: Replaced `valueString` with `value` for a simpler, consistent API.
+  value?: string;
 }
 
 export function stringFieldDeserializer(item: any): StringField {
@@ -326,14 +329,14 @@ export function stringFieldDeserializer(item: any): StringField {
     confidence: item["confidence"],
     source: item["source"],
     fieldType: item["type"],
-    valueString: item["valueString"],
-    value: item["valueString"], // Added
+    // CUSTOMIZATION: SDK-IMPROVEMENT: Map `value` from wire `valueString`
+    value: item["valueString"],
   };
 }
 ```
 
-**Apply the same pattern for all subtypes**:
-| Type | value Property Type | Maps From |
+**Apply the same pattern for all subtypes** (remove `value*`, keep only `value`):
+| Type | `value` Property Type | Wire Property Mapped From |
 |------|---------------------|-----------|
 | `StringField` | `string` | `valueString` |
 | `NumberField` | `number` | `valueNumber` |
@@ -344,6 +347,45 @@ export function stringFieldDeserializer(item: any): StringField {
 | `ArrayField` | `ContentFieldUnion[]` | `valueArray` |
 | `ObjectField` | `Record<string, ContentFieldUnion>` | `valueObject` |
 | `JsonField` | `any` | `valueJson` |
+
+**ObjectField** example (complex type with deserialization):
+
+```typescript
+export interface ObjectField extends ContentField {
+  fieldType: "object";
+  // CUSTOMIZATION: SDK-IMPROVEMENT: Replaced `valueObject` with `value` for a simpler, consistent API.
+  value?: Record<string, ContentFieldUnion>;
+}
+
+export function objectFieldDeserializer(item: any): ObjectField {
+  return {
+    type: item["type"],
+    spans: !item["spans"] ? item["spans"] : contentSpanArrayDeserializer(item["spans"]),
+    confidence: item["confidence"],
+    source: item["source"],
+    fieldType: item["type"],
+    // CUSTOMIZATION: SDK-IMPROVEMENT: Map `value` from wire `valueObject`
+    value: !item["valueObject"]
+      ? item["valueObject"]
+      : contentFieldUnionRecordDeserializer(item["valueObject"]),
+  };
+}
+```
+
+**Usage in samples/tests**: All code should use `.value` directly:
+
+```typescript
+// Scalar fields
+const customerName = field.value; // string | undefined
+
+// Object fields
+const objField = totalAmountField as ObjectField;
+const amountField = objField.value?.["Amount"];
+
+// Array fields
+const arrField = lineItemsField as ArrayField;
+for (const item of arrField.value ?? []) { ... }
+```
 
 ---
 
@@ -533,6 +575,44 @@ import {} from // ...other imports...
 
 ---
 
+### Fix 11 [EMITTER-FIX]: Rename endpointParam to endpoint
+
+**Files**: `src/contentUnderstandingClient.ts`, `src/api/contentUnderstandingContext.ts`
+
+**Problem**: The TypeSpec JS emitter generates the constructor/factory parameter name as `endpointParam` instead of the more natural `endpoint`.
+
+**Why this matters**: The Azure SDK guidelines use `endpoint` as the standard parameter name for service endpoint URLs. Using `endpointParam` is inconsistent with other Azure SDK clients and less intuitive for developers.
+
+**Fix**: Rename the parameter from `endpointParam` to `endpoint` in both the `ContentUnderstandingClient` constructor and the `createContentUnderstanding` factory function:
+
+```typescript
+// In contentUnderstandingClient.ts:
+constructor(
+  endpoint: string, // Renamed from 'endpointParam'
+  credential: KeyCredential | TokenCredential,
+  options: ContentUnderstandingClientOptionalParams = {},
+) {
+  // ...
+  this._client = createContentUnderstanding(endpoint, credential, {
+    ...options,
+    userAgentOptions: { userAgentPrefix },
+  });
+  // ...
+}
+
+// In contentUnderstandingContext.ts:
+export function createContentUnderstanding(
+  endpoint: string, // Renamed from 'endpointParam'
+  credential: KeyCredential | TokenCredential,
+  options: ContentUnderstandingClientOptionalParams = {},
+): ContentUnderstandingContext {
+  const endpointUrl = options.endpoint ?? `${endpoint}/contentunderstanding`;
+  // ...
+}
+```
+
+---
+
 ## Troubleshooting
 
 ### Build Fails After Regeneration
@@ -567,5 +647,6 @@ import {} from // ...other imports...
 - `tsp-location.yaml` - TypeSpec commit reference
 - `generated/` - Raw generated code (do not edit directly)
 - `src/` - Customized source code (apply fixes here)
-- `src/contentUnderstandingClient.ts` - Client wrapper with API customizations (Fix 3 & 7)
+- `src/contentUnderstandingClient.ts` - Client wrapper with API customizations (Fix 3, 7 & 11)
+- `src/api/contentUnderstandingContext.ts` - Client context factory (Fix 11)
 - `src/static-helpers/urlTemplate.ts` - URL template expansion (Fix 8 & 9)
